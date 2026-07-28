@@ -1,0 +1,10 @@
+base_model = "perplexity/sonar-pro"
+structured_output = true
+
+[cost]
+input = 3
+output = 15
+cache_read = 3
+
+[limit]
+context = 204_800

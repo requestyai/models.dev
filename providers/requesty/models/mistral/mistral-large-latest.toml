@@ -1,0 +1,10 @@
+base_model = "mistral/mistral-large-latest"
+structured_output = true
+
+[cost]
+input = 0.55
+output = 1.65
+cache_read = 0.55
+
+[limit]
+context = 131_072

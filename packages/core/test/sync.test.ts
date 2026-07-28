@@ -35,6 +35,11 @@ import {
 import { buildLLMGatewayModel, type LLMGatewayModel } from "../src/sync/providers/llmgateway.js";
 import { openai, parseOpenAIModels } from "../src/sync/providers/openai.js";
 import { pioneer } from "../src/sync/providers/pioneer.js";
+import {
+  buildRequestyModel,
+  resolveRequestyBaseModel,
+  type RequestyModel,
+} from "../src/sync/providers/requesty.js";
 import { google, shouldTrackGoogleModel } from "../src/sync/providers/google.js";
 import { resolveVeniceBaseModel } from "../src/sync/providers/venice.js";
 import { buildVercelModel, vercel } from "../src/sync/providers/vercel.js";
@@ -1534,6 +1539,90 @@ test("maps EmpirioLabs aliases to canonical model metadata", () => {
   expect(resolveEmpiriolabsBaseModel("muse-spark-1-1")).toBe("meta/muse-spark-1.1");
   expect(resolveEmpiriolabsBaseModel("step-3-5-flash")).toBe("stepfun/step-3.5-flash");
 });
+
+test("factors Requesty routes against canonical metadata", () => {
+  expect(buildRequestyModel(requestyModel(), "anthropic/claude-sonnet-5", undefined)).toEqual({
+    base_model: "anthropic/claude-sonnet-5",
+    base_model_omit: undefined,
+    reasoning_options: [{ type: "effort", values: ["none", "low", "medium", "high", "max"] }],
+    structured_output: true,
+    cost: { input: 3, output: 15, cache_read: 0.3, cache_write: 3.75 },
+  });
+});
+
+test("keeps Requesty capabilities the catalog under-reports", () => {
+  expect(buildRequestyModel(
+    requestyModel({
+      id: "xai/grok-4.5",
+      supports_reasoning: false,
+      supports_vision: false,
+      max_output_tokens: 0,
+      cached_price: 0,
+      caching_price: 0,
+    }),
+    "xai/grok-4.5",
+    undefined,
+  )).toEqual({
+    base_model: "xai/grok-4.5",
+    base_model_omit: undefined,
+    reasoning_options: [{ type: "effort", values: ["none", "low", "medium", "high", "max"] }],
+    limit: { context: 1_000_000 },
+    cost: { input: 3, output: 15 },
+  });
+});
+
+test("maps Requesty context pricing bands to cost tiers", () => {
+  expect(buildRequestyModel(
+    requestyModel({
+      pricing: [
+        { prompt_tokens_threshold: 0, input_price: 0.000003, output_price: 0.000015 },
+        {
+          prompt_tokens_threshold: 200_000,
+          input_price: 0.000006,
+          output_price: 0.0000225,
+          cached_price: 0.0000006,
+          caching_price: 0.0000075,
+        },
+      ],
+    }),
+    "anthropic/claude-sonnet-5",
+    undefined,
+  ).cost?.tiers).toEqual([
+    {
+      tier: { type: "context", size: 200_000 },
+      input: 6,
+      output: 22.5,
+      cache_read: 0.6,
+      cache_write: 7.5,
+    },
+  ]);
+});
+
+test("resolves Requesty hosting, region, and service-tier routes to metadata", () => {
+  expect(resolveRequestyBaseModel("zai/glm-5.2")).toBe("zhipuai/glm-5.2");
+  expect(resolveRequestyBaseModel("moonshot/kimi-k3")).toBe("moonshotai/kimi-k3");
+  expect(resolveRequestyBaseModel("openai/gpt-5.4:flex")).toBe("openai/gpt-5.4");
+  expect(resolveRequestyBaseModel("vertex/claude-sonnet-5@us-east5")).toBe("anthropic/claude-sonnet-5");
+  expect(resolveRequestyBaseModel("novita/qwen/qwen3-235b-a22b-fp8")).toBeUndefined();
+});
+
+function requestyModel(overrides: Partial<RequestyModel> = {}): RequestyModel {
+  return {
+    id: "anthropic/claude-sonnet-5",
+    created: 1_782_777_600,
+    context_window: 1_000_000,
+    max_output_tokens: 128_000,
+    input_price: 0.000003,
+    output_price: 0.000015,
+    cached_price: 0.0000003,
+    caching_price: 0.00000375,
+    supports_vision: true,
+    supports_reasoning: true,
+    supports_tool_calling: true,
+    supports_output_json_schema: true,
+    ...overrides,
+  };
+}
 
 function unavailableStub(): OpenRouterModel {
   return openRouterModel({

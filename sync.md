@@ -253,6 +253,20 @@ Venice is implemented in `packages/core/src/sync/providers/venice.ts`.
 - Every Venice model uses `base_model`; flattened IDs are matched to provider-agnostic metadata before provider-specific overrides are written.
 - Every Venice model declares `reasoning_options`; models without API-provided effort levels use an empty array.
 
+## Requesty Notes
+
+Requesty is implemented in `packages/core/src/sync/providers/requesty.ts`.
+
+- Run it with `bun models:sync requesty` or `bun requesty:sync`.
+- Source endpoint: `https://router.requesty.ai/v1/models`; no auth required and no key is sent, so the run only sees catalog routes.
+- Requesty routes are gateway data (price, limits, capability flags) on top of a model the catalog already describes, so each route is shaped into OpenRouter's model shape and built with `buildOpenRouterModel`. Everything else — modalities, factoring, description, `reasoning_options` — comes from the shared builder.
+- Route IDs map directly to TOML paths under `providers/requesty/models`, so `vertex/claude-opus-4-5@us-east5` lives in `providers/requesty/models/vertex/claude-opus-4-5@us-east5.toml`. Every route Requesty serves gets a file, including hosting prefixes (`vertex/`, `bedrock/`, `azure/`, …), regions (`@us-east5`) and service tiers (`:flex`): those are the IDs callers pass to the gateway.
+- Base metadata is resolved by model slug, not by route prefix, with the region/tier suffix stripped: `vertex/claude-opus-4-5@us-east5` and `anthropic/claude-opus-4-5` both inherit `models/anthropic/claude-opus-4-5.toml`. A slug shared by two labs is treated as unresolvable.
+- Routes without a `models/` entry keep any authored file untouched and are reported in the sync notice; adding the metadata entry is enough to bring them in on the next run.
+- API prices are USD per token, matching OpenRouter's unit, so they pass through the shared price conversion to per-1M numbers. Zero cache prices mean "not charged" and are dropped. `pricing` bands (context-length overrides) become `cost.tiers`; the flat prices stay the base band.
+- Capability flags may only raise a capability, never clear one that the base metadata asserts: the flags describe the controls the gateway exposes, and always-on reasoning models (`xai/grok-4`, `deepseek/deepseek-reasoner`) report `supports_reasoning: false` while some multimodal routes report `supports_vision: false`.
+- Reasoning models get a single `effort` option: Requesty accepts one `reasoning_effort` for every vendor and translates it into that vendor's native control (<https://docs.requesty.ai/features/reasoning>).
+
 ## Standalone Generators
 
 Some provider scripts in `packages/core/script/generate-*.ts` are not wired into `bun models:sync`. When updating those scripts, preserve existing `base_model` and `base_model_omit` fields for generated TOMLs that already use model metadata inheritance. New inheritance-aware output should use `base_model`; do not reintroduce legacy `[extends]` syntax.

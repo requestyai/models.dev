@@ -1,0 +1,12 @@
+base_model = "google/gemma-4-31b-it"
+
+[[reasoning_options]]
+type = "effort"
+values = ["none", "low", "medium", "high", "max"]
+
+[cost]
+input = 0
+output = 0
+
+[limit]
+output = 8_192

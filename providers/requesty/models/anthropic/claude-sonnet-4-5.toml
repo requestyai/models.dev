@@ -1,6 +1,9 @@
 base_model = "anthropic/claude-sonnet-4-5-20250929"
+structured_output = true
 
-reasoning_options = [{ type = "effort", values = ["none", "low", "medium", "high", "max"] }, { type = "budget_tokens" }]
+[[reasoning_options]]
+type = "effort"
+values = ["none", "low", "medium", "high", "max"]
 
 [cost]
 input = 3

@@ -1,0 +1,10 @@
+base_model = "deepseek/deepseek-v4-pro"
+
+[[reasoning_options]]
+type = "effort"
+values = ["none", "low", "medium", "high", "max"]
+
+[cost]
+input = 0.435
+output = 0.87
+cache_read = 0.0145

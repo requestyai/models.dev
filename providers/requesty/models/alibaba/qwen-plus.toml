@@ -1,0 +1,15 @@
+base_model = "alibaba/qwen-plus"
+structured_output = true
+
+[[reasoning_options]]
+type = "effort"
+values = ["none", "low", "medium", "high", "max"]
+
+[cost]
+input = 0.4
+output = 1.2
+cache_read = 0.4
+cache_write = 0.4
+
+[limit]
+context = 131_072

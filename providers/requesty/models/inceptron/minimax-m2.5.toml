@@ -1,0 +1,15 @@
+base_model = "minimax/MiniMax-M2.5"
+structured_output = true
+
+[[reasoning_options]]
+type = "effort"
+values = ["none", "low", "medium", "high", "max"]
+
+[cost]
+input = 0.28
+output = 1.1
+cache_read = 0.03
+
+[limit]
+context = 196_608
+output = 196_608
