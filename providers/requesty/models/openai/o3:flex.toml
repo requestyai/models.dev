@@ -1,0 +1,10 @@
+base_model = "openai/o3"
+
+[[reasoning_options]]
+type = "effort"
+values = ["none", "low", "medium", "high", "max"]
+
+[cost]
+input = 1
+output = 4
+cache_read = 0.25

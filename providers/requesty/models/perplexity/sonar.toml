@@ -1,0 +1,11 @@
+base_model = "perplexity/sonar"
+structured_output = true
+
+[cost]
+input = 1
+output = 1
+cache_read = 1
+
+[limit]
+context = 131_072
+output = 8_192
